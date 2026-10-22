@@ -1,0 +1,58 @@
+# Stage 2 reproducible DEFEAT run (base setting: #2 is a VIP, #3 is a Critic)
+# Mistake: from turn 10 the manager prioritises the newest customer and then
+# leaves the Critic's READY Pasta unserved. The Critic (-12 per turn) walks out
+# without paying, so only 3 customers pay and revenue stays under $45.
+# T1
+seat 1
+wait
+# T2
+order 1
+cook 1
+# T3
+serve 1
+wait
+# T4
+seat 2
+wait
+# T5
+order 2
+cook 2
+# T6
+serve 2
+wait
+# T7
+seat 3
+wait
+# T8: Critic #3 orders Pasta
+order 3
+cook 3
+# T9: Pasta READY at the end of this turn
+wait
+cook 3
+# T10: mistake - seat #4 instead of serving the hot Pasta
+seat 4
+wait
+# T11: mistake - take #4's order and cook it first
+order 4
+cook 4
+# T12: mistake - serve #4 first
+serve 4
+wait
+# T13: mistake - the manager keeps the Waiter on standby instead of serving the Critic
+wait
+wait
+# T14
+wait
+wait
+# T15: the Critic runs out of patience and leaves without paying (end of turn)
+seat 5
+wait
+# T16: #5 orders Burger
+order 5
+cook 5
+# T17
+serve 5
+wait
+# T18: #5 is still eating, #6 never got a table
+seat 6
+wait

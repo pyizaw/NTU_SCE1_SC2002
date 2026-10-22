@@ -1,0 +1,83 @@
+# Stage 3 reproducible DEFEAT run (base setting: #2 VIP, #3 Critic, Host,
+# combo menu and Happy Hour).
+# Each turn reads: [Happy Hour y/n while unused] / Host / Waiter / Chef.
+# Mistakes: the Host is never used, Happy Hour is spent on turn 4 when nobody
+# is waiting, and the kitchen leaves the Critic's 3-unit combo for too long.
+# The Critic walks out on turn 15, so only 3 customers pay.
+# T1
+n
+wait
+seat 1
+wait
+# T2
+n
+wait
+order 1
+cook 1
+# T3
+n
+wait
+serve 1
+wait
+# T4: Happy Hour switched on early
+y
+wait
+seat 2
+wait
+# T5: VIP + Happy Hour: Burger $15 x 0.9 x 0.8 = $10.80
+wait
+order 2
+cook 2
+# T6
+wait
+serve 2
+wait
+# T7
+wait
+seat 3
+wait
+# T8: Critic orders the Salad + Pasta Combo, but the Chef idles
+wait
+order 3
+wait
+# T9
+wait
+wait
+wait
+# T10
+wait
+seat 4
+wait
+# T11: the Chef starts on #4's combo instead of the Critic's
+wait
+order 4
+cook 4
+# T12
+wait
+wait
+cook 4
+# T13
+wait
+serve 4
+cook 3
+# T14
+wait
+wait
+cook 3
+# T15: the combo is finally READY, but the Critic reaches 0 and leaves
+wait
+wait
+cook 3
+# T16: try to cook the cancelled order -> rejected
+wait
+seat 5
+cook 3
+wait
+# T17
+wait
+order 5
+cook 5
+# T18
+wait
+wait
+cook 5

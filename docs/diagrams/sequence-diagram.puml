@@ -1,0 +1,158 @@
+@startuml sequence-diagram
+title Restaurant Rush - Sequence Diagram\nVIP customer #2 with Happy Hour: arrival, order, READY, SERVED, eating, payment, result
+
+skinparam shadowing false
+skinparam sequenceMessageAlign left
+skinparam responseMessageBelowArrow true
+skinparam note {
+  BackgroundColor #FFF8DC
+  BorderColor #B8860B
+}
+
+actor Manager
+boundary ":ConsoleView" as V
+control ":GameController" as GC
+participant ":HappyHour" as HH
+participant ":Host" as H
+participant ":Waiter" as W
+participant ":PriceCalculator" as PC
+participant ":Chef" as C
+participant ":Cashier" as CA
+participant ":Restaurant" as R
+participant "vip:VIPCustomer" as VIP
+participant "o:Order" as O
+participant ":GameResult" as GR
+
+loop turn = 1 .. 18 (no early ending)
+  GC -> GC : staff.startTurn() for Host, Waiter, Chef, Cashier
+
+  == Turn 4 - Step 1: arrival ==
+  GC -> GC : factory = config.getArrivals().get(4)
+  create VIP
+  GC -> VIP : factory.create(2, 4)  «VIPCustomer::new»
+  GC -> R : admit(vip)
+  note right of VIP : state = WAITING\nsatisfaction = 100
+  GC -> V : showStatus(restaurant, 4, staff)
+  V -> Manager : queue, tables, satisfaction,\norders, staff tasks
+
+  opt happyHour.canActivate()
+    GC -> V : askActivateHappyHour(4)
+    V -> Manager : "Activate Happy Hour? (y/n)"
+    Manager -> V : "y"
+    V --> GC : true
+    GC -> HH : activate(4)
+    note right of GC
+      <b>Manager choice that changes the outcome:</b>
+      the VIP's bill will be locked at $10.80
+      instead of $13.50, and waiting customers
+      recover 15 satisfaction on turns 4 and 5.
+    end note
+  end
+  opt happyHour.isActive(4)
+    GC -> R : recoverWaitingCustomers(15)
+    R -> VIP : recover(15)
+  end
+
+  == Step 2-3: manager choices (Host, then Waiter, then Chef) ==
+  loop while !host.hasActed()
+    GC -> V : askCommand(host, tasks)
+    Manager -> V : "seat 2"
+    V --> GC : StaffCommand(SEAT, 2)
+    GC -> H : seat(restaurant, 2)
+    H -> R : seatCustomer(2)
+    alt a table is free and vip is WAITING
+      R -> VIP : seatAt(table)
+      R --> H : ActionResult.ok
+      H --> GC : ok (task used)
+    else no free table / not in queue
+      R --> H : ActionResult.fail(reason)
+      H --> GC : fail (task NOT used)
+      GC -> V : showRejected(reason)
+    end
+  end
+
+  loop while !waiter.hasActed()
+    GC -> V : askCommand(waiter, tasks)
+    Manager -> V : "order 2"
+    V --> GC : StaffCommand(ORDER, 2)
+    GC -> W : takeOrder(restaurant, 2, 4)
+    alt vip.getState() == SEATED
+      W -> VIP : chooseDish(menu)
+      VIP --> W : Burger  «(id-1) mod menu size»
+      W -> PC : priceFor(vip, Burger, 4)
+      PC -> VIP : billFor(Burger)
+      VIP --> PC : 1350  «VIP override: 1500 x 90%»
+      PC -> HH : apply(1350, 4)
+      HH --> PC : 1080  «active: x 80%»
+      PC --> W : 1080
+      create O
+      W -> O : new Order(vip, Burger, 1080, 4)
+      W -> VIP : placeOrder(o)
+      note right of VIP : state = ORDERED\nprice locked at $10.80
+      W --> GC : ok
+    else not seated / already ordered
+      W --> GC : fail(reason)
+      GC -> V : showRejected(reason)
+    end
+  end
+
+  loop while !chef.hasActed()
+    GC -> V : askCommand(chef, tasks)
+    Manager -> V : "cook 2"
+    GC -> C : cook(restaurant, 2, 4)
+    C -> O : prepareOneUnit(4)
+    O -> O : unitsDone = 1 / 1\nstatus = READY, readyTurn = 4
+    C --> GC : ok "READY (serve next turn)"
+  end
+
+  == Step 4-5: eating, payment, waiting ==
+  GC -> CA : collectNextPayment(restaurant, 4)
+  GC -> R : finishEating(4)
+  GC -> R : applyEndOfTurnPatience()
+  R -> VIP : losePatience()
+  note right of VIP : unserved: -5 (VIP rate)
+  GC -> V : showTurnEnd(restaurant, 4, 18)
+
+  == Turn 5: serve the READY dish (same askCommand loop, Manager types "serve 2") ==
+  GC -> W : serve(restaurant, 2, 5)
+  W -> O : canBeServed(5)
+  alt status == READY and readyTurn < 5
+    W -> VIP : serve(5)
+    VIP -> O : markServed()
+    VIP -> VIP : reactToService(o, 5)  «no reaction for VIP»
+    note right of O : status = SERVED
+    W -> R : recordServed()
+  else still PREPARING or READY only this turn
+    W --> GC : fail(reason)
+    GC -> V : showRejected(reason)
+  end
+
+  == Turn 6: eating finished ==
+  GC -> R : finishEating(6)
+  R -> VIP : finishEatingIfDone(6)
+  note right of VIP : servedTurn 5 < 6\nstate = READY_TO_PAY
+
+  == Turn 7: Cashier (automatic, one per turn, oldest first) ==
+  GC -> CA : collectNextPayment(restaurant, 7)
+  CA -> R : nextCustomerToPay(7)
+  R --> CA : vip  «canPay: readyToPayTurn 6 < 7»
+  CA -> R : collectPayment(vip)
+  R -> VIP : pay()
+  VIP -> O : markPaid()
+  VIP -> VIP : releaseTable()
+  R -> R : revenueCents += 1080\npaidSatisfactions.add(satisfaction)
+  CA --> GC : ok "collected $10.80"
+end
+
+== After turn 18: result check ==
+GC -> GR : evaluate(config, restaurant)
+GR -> R : getPaidCount(), getRevenueCents(),\ngetAveragePaidSatisfaction()
+GR --> GC : result
+alt result.isVictory()  «paid >= 4 AND revenue >= $45 AND avg >= 60»
+  GC -> V : showResult(result)
+  V -> Manager : VICTORY
+else any target missed
+  GC -> V : showResult(result)
+  V -> Manager : DEFEAT
+end
+@enduml

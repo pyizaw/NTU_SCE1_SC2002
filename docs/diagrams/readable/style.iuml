@@ -1,0 +1,44 @@
+' Shared look for the readable diagram set.
+' Colours by layer:  boundary = blue, control = orange, staff = purple,
+'                    domain/entity = green, menu & pricing = yellow, enums = grey
+!pragma layout smetana
+skinparam dpi 130
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 13
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam roundCorner 10
+skinparam packageStyle rectangle
+skinparam ArrowColor #555555
+skinparam ArrowThickness 1.2
+skinparam class {
+  BorderColor #5A5A5A
+  HeaderFontStyle bold
+  StereotypeFontSize 11
+}
+skinparam package {
+  BorderColor #9E9E9E
+  FontColor #616161
+  FontStyle bold
+}
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #C9A227
+  FontSize 12
+}
+skinparam legend {
+  BackgroundColor #FAFAFA
+  BorderColor #BDBDBD
+  FontSize 12
+}
+skinparam title {
+  FontSize 18
+  FontStyle bold
+}
+
+!define BOUNDARY #E3F2FD
+!define CONTROL  #FFF3E0
+!define STAFF    #F3E5F5
+!define DOMAIN   #E8F5E9
+!define MENU     #FFFDE7
+!define ENUMC    #ECEFF1

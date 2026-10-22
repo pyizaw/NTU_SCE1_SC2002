@@ -1,0 +1,55 @@
+@startuml 7-customer-and-order-lifecycle
+!include style.iuml
+skinparam state {
+  BackgroundColor #E8F5E9
+  BorderColor #5A5A5A
+  FontStyle bold
+}
+title 7. Life cycle of a customer (left) and of an order (right)
+
+state "Customer" as CUST {
+  [*] --> WAITING : arrives\n(satisfaction 100)
+  WAITING --> SEATED : seatAt(table)\n[Host or Waiter, table free]
+  SEATED --> ORDERED : placeOrder(o)\n[Waiter takes order,\nprice locked]
+  ORDERED --> EATING : serve(turn)\n[dish READY before this turn]
+  EATING --> READY_TO_PAY : finishEatingIfDone(turn)\n[served on an earlier turn]
+  READY_TO_PAY --> PAID : pay()\n[Cashier, became ready\non an earlier turn]
+  PAID --> [*]
+
+  WAITING --> LEFT : satisfaction = 0
+  SEATED --> LEFT : satisfaction = 0
+  ORDERED --> LEFT : satisfaction = 0
+  LEFT --> [*]
+
+  WAITING : loses satisfaction each turn
+  SEATED : loses satisfaction each turn
+  ORDERED : loses satisfaction each turn
+  EATING : no loss
+  READY_TO_PAY : no loss
+  PAID : satisfaction recorded,\ntable freed
+  LEFT : order cancelled,\ntable freed, no revenue
+}
+
+state "Order" as ORD {
+  state PREPARING #FFF3E0
+  state READY #FFF3E0
+  state "SERVED" as OSERVED #FFF3E0
+  state "PAID" as OPAID #FFF3E0
+  state CANCELLED #FFEBEE
+  [*] --> PREPARING : new Order(...)\n[taken by the Waiter]
+  PREPARING --> PREPARING : prepareOneUnit()\n[units left > 1]
+  PREPARING --> READY : prepareOneUnit()\n[last unit]
+  READY --> OSERVED : markServed()
+  OSERVED --> OPAID : markPaid()
+  PREPARING --> CANCELLED : cancel()\n[customer left]
+  READY --> CANCELLED : cancel()\n[customer left]
+  OPAID --> [*]
+  CANCELLED --> [*]
+}
+
+note bottom of CUST
+  Loss per unserved turn: Regular 8, VIP 5, Critic 12.
+  Happy Hour: +15 at the start of each active turn while
+  WAITING, SEATED or ORDERED (max 100).
+end note
+@enduml

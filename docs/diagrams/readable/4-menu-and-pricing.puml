@@ -1,0 +1,86 @@
+@startuml 4-menu-and-pricing
+!include style.iuml
+title 4. Menu, combos and pricing
+
+class Menu MENU {
+  - items: List<MenuItem>
+  + {static} standard(): Menu
+  + {static} withCombos(): Menu
+  + add(item: MenuItem): void
+  + get(index: int): MenuItem
+  + size(): int
+}
+
+class MenuItem MENU {
+  - name: String
+  - priceCents: int
+  - prepUnits: int
+  + getName(): String
+  + getPriceCents(): int
+  + getPrepUnits(): int
+}
+
+class ComboMeal MENU {
+  - {static} COMBO_PRICE_PERCENT: int = 90
+  - first: MenuItem [1]
+  - second: MenuItem [1]
+  + ComboMeal(first: MenuItem, second: MenuItem)
+}
+
+class PriceCalculator MENU {
+  - happyHour: HappyHour
+  + priceFor(c: Customer, item: MenuItem, turn: int): int
+}
+
+class HappyHour MENU {
+  + {static} DURATION: int = 2
+  + {static} PRICE_PERCENT: int = 80
+  + {static} RECOVERY: int = 15
+  - activatedTurn: int
+  + canActivate(): boolean
+  + activate(turn: int): void
+  + isActive(turn: int): boolean
+  + turnsRemaining(turn: int): int
+  + apply(cents: int, turn: int): int
+}
+
+class Money <<utility>> ENUMC {
+  + {static} format(cents: int): String
+  + {static} percentOf(cents: int, percent: int): int
+}
+
+class Customer DOMAIN {
+  + billFor(item: MenuItem): int
+}
+
+Menu o-- "1..*" MenuItem : items
+MenuItem <|-- ComboMeal
+PriceCalculator --> "1" HappyHour : 2. apply()
+PriceCalculator ..> Customer : 1. billFor()
+ComboMeal ..> Money
+HappyHour ..> Money
+
+note right of ComboMeal
+  <b>Inheritance + composition</b>
+  A combo <i>is a</i> MenuItem (arrow) built <i>from</i> two
+  existing MenuItems (fields first, second - composition):
+  units = sum, price = 90% of the two (nearest cent).
+  Order, Chef and pricing use it with no changes.
+
+  Stage 3 menu (customers pick by position):
+  | Salad | $9.00 | 1 |
+  | Burger | $15.00 | 1 |
+  | Pasta | $18.00 | 2 |
+  | Salad + Burger | $21.60 | 2 |
+  | Salad + Pasta | $24.30 | 3 |
+  | Burger + Pasta | $29.70 | 3 |
+end note
+
+note bottom of PriceCalculator
+  Bill when the order is taken:
+  <b>customer discount first, then Happy Hour</b>
+  VIP Burger in Happy Hour:
+  $15.00 x 0.9 = $13.50, x 0.8 = <b>$10.80</b>
+  All money is stored as integer cents.
+end note
+@enduml

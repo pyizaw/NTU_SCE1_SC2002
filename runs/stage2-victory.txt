@@ -1,0 +1,58 @@
+# Stage 2 reproducible VICTORY run (base setting: #2 is a VIP, #3 is a Critic)
+# Same priorities as the Stage 1 win. Key decision on turn 10: serve the
+# Critic's Pasta the turn after it became READY (hot) instead of seating #4.
+# T1
+seat 1
+wait
+# T2: Customer #1 orders Salad (1 unit) - Chef finishes it this turn
+order 1
+cook 1
+# T3: Salad was READY on turn 2, so it can be served now
+serve 1
+wait
+# T4
+seat 2
+wait
+# T5: VIP #2 orders Burger and gets 10% off ($13.50)
+order 2
+cook 2
+# T6
+serve 2
+wait
+# T7
+seat 3
+wait
+# T8: Critic #3 always orders the most demanding dish: Pasta (2 units)
+order 3
+cook 3
+# T9: try to serve too early -> rejected, Waiter can choose again
+serve 3
+wait
+cook 3
+# T10: serve the Critic while the Pasta is hot; #4 waits in the queue one turn
+serve 3
+wait
+# T11
+seat 4
+wait
+# T12
+order 4
+cook 4
+# T13
+serve 4
+wait
+# T14
+seat 5
+wait
+# T15
+order 5
+cook 5
+# T16
+serve 5
+wait
+# T17
+seat 6
+wait
+# T18
+order 6
+cook 6

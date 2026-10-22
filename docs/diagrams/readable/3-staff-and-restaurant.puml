@@ -1,0 +1,109 @@
+@startuml 3-staff-and-restaurant
+!include style.iuml
+title 3. Staff and the restaurant floor
+
+abstract class Staff STAFF {
+  - taskUsed: boolean
+  + {abstract} getRole(): String
+  + {abstract} availableTasks(r: Restaurant, turn: int): List<String>
+  + startTurn(): void
+  + hasActed(): boolean
+  + waitTurn(): ActionResult
+  # perform(task: Supplier<ActionResult>): ActionResult
+}
+
+class Host STAFF {
+  + seat(r: Restaurant, customerId: int): ActionResult
+}
+
+class Waiter STAFF {
+  - menu: Menu
+  - pricing: PriceCalculator
+  + seat(r: Restaurant, customerId: int): ActionResult
+  + takeOrder(r: Restaurant, customerId: int, turn: int): ActionResult
+  + serve(r: Restaurant, customerId: int, turn: int): ActionResult
+}
+
+class Chef STAFF {
+  + cook(r: Restaurant, orderId: int, turn: int): ActionResult
+  + ordersToCook(r: Restaurant): List<Order>
+}
+
+class Cashier STAFF {
+  + collectNextPayment(r: Restaurant, turn: int): Optional<ActionResult>
+}
+
+class Restaurant DOMAIN {
+  - tables: List<Table>
+  - waitingQueue: List<Customer>
+  - customers: List<Customer>
+  - paidSatisfactions: List<Integer>
+  - revenueCents: int
+  - servedCount: int
+  - unhappyDepartures: int
+  + admit(c: Customer): void
+  + findCustomer(id: int): Optional<Customer>
+  + findFreeTable(): Optional<Table>
+  + seatCustomer(customerId: int): ActionResult
+  + finishEating(turn: int): List<Customer>
+  + nextCustomerToPay(turn: int): Optional<Customer>
+  + collectPayment(c: Customer): int
+  + applyEndOfTurnPatience(): List<Customer>
+  + recoverWaitingCustomers(points: int): List<Customer>
+  + getAveragePaidSatisfaction(): OptionalDouble
+}
+
+class ActionResult DOMAIN {
+  - success: boolean
+  - message: String
+  + {static} ok(message: String): ActionResult
+  + {static} fail(reason: String): ActionResult
+  + isSuccess(): boolean
+}
+
+class Table DOMAIN
+class Customer DOMAIN
+class Menu MENU
+class PriceCalculator MENU
+hide Table members
+hide Customer members
+hide Menu members
+hide PriceCalculator members
+
+Staff <|-- Host
+Staff <|-- Waiter
+Staff <|-- Chef
+Staff <|-- Cashier
+
+Host ..> Restaurant : seats via
+Waiter ..> Restaurant : seat / order / serve
+Chef ..> Restaurant : finds orders
+Cashier ..> Restaurant : charges via
+Staff ..> ActionResult : returns
+
+Waiter --> "1" Menu
+Waiter --> "1" PriceCalculator
+
+Restaurant *-- "2" Table : tables
+Restaurant o-- "0..6" Customer : customers,\nwaitingQueue
+
+note top of Staff
+  <b>Encapsulation</b>: perform() is the only way to run
+  a task. It refuses a second task in the same turn,
+  and a <b>failed</b> task does not use up the turn.
+end note
+
+note bottom of Host
+  Host is <b>not</b> a subclass of Waiter:
+  it cannot take orders, so that would
+  break substitution (LSP). Both reuse
+  Restaurant.seatCustomer() instead.
+end note
+
+note right of Restaurant
+  <b>Composition</b>: Restaurant creates and owns
+  its tables. Shared rules live here:
+  seating, who pays next (oldest first),
+  end-of-turn patience, Happy Hour recovery.
+end note
+@enduml

@@ -1,0 +1,99 @@
+@startuml 6a-sequence-turn4
+!include style.iuml
+skinparam sequenceMessageAlign left
+skinparam responseMessageBelowArrow true
+skinparam sequence {
+  ParticipantBorderColor #5A5A5A
+  LifeLineBorderColor #9E9E9E
+  GroupBorderColor #9E9E9E
+  GroupHeaderFontStyle bold
+}
+title 6a. Sequence - turn 4: a VIP arrives, Happy Hour is switched on, the order is taken and cooked
+autonumber
+
+actor Manager
+boundary "view:\nGameView" as V BOUNDARY
+control ":GameController" as GC CONTROL
+participant ":HappyHour" as HH MENU
+participant ":Host" as H STAFF
+participant ":Waiter" as W STAFF
+participant ":PriceCalculator" as PC MENU
+participant ":Chef" as C STAFF
+participant ":Restaurant" as R DOMAIN
+participant "vip:\nVIPCustomer" as VIP DOMAIN
+
+note over Manager, VIP #FFFBEA
+  Both parts (6a and 6b) run inside GameController.play():
+  <b>loop turn = 1 .. 18</b> (no early ending). Each turn: staff.startTurn(), then steps 1-5.
+end note
+== Step 1: arrival ==
+create VIP
+GC -> VIP : new VIPCustomer(2, 4)\n(via CustomerFactory)
+GC -> R : admit(vip)
+GC -> V : showStatus(restaurant, 4, staff)
+
+== Start of turn: Happy Hour ==
+opt happyHour.canActivate()
+  GC -> V : askActivateHappyHour(4)
+  Manager -> V : "y"
+  V --> GC : true
+  GC -> HH : activate(4)
+  note over GC, HH #FFFBEA
+    <b>Manager choice that changes the outcome:</b>
+    the VIP's bill will be $10.80 instead of $13.50
+  end note
+end
+opt happyHour.isActive(4)
+  GC -> R : recoverWaitingCustomers(15)
+end
+
+== Step 2: Host seats the VIP ==
+loop until host has acted
+  GC -> V : askCommand(host, tasks)
+  Manager -> V : "seat 2"
+  GC -> H : seat(restaurant, 2)
+  H -> R : seatCustomer(2)
+  alt table free and VIP waiting
+    R -> VIP : seatAt(table)
+    R --> GC : ok
+  else not allowed
+    R --> GC : fail(reason)
+    GC -> V : showRejected(reason)
+    note right of GC : task not used,\nask again
+  end
+end
+
+== Step 2: Waiter takes the order ==
+loop until waiter has acted
+  GC -> V : askCommand(waiter, tasks)
+  Manager -> V : "order 2"
+  GC -> W : takeOrder(restaurant, 2, 4)
+  W -> VIP : chooseDish(menu)
+  VIP --> W : Burger
+  W -> PC : priceFor(vip, Burger, 4)
+  PC -> VIP : billFor(Burger)
+  VIP --> PC : 1350 (10% off)
+  PC -> HH : apply(1350, 4)
+  HH --> PC : 1080 (20% off)
+  PC --> W : 1080
+  create participant "o:Order" as O DOMAIN
+  W -> O : new Order(vip, Burger, 1080, 4)
+  W -> VIP : placeOrder(o)
+  W --> GC : ok "bill locked at $10.80"
+end
+
+== Step 3: Chef cooks ==
+loop until chef has acted
+  GC -> V : askCommand(chef, tasks)
+  Manager -> V : "cook 2"
+  GC -> C : cook(restaurant, 2, 4)
+  C -> O : prepareOneUnit(4)
+  note right of O : 1 of 1 unit done:\nstatus = READY
+end
+
+== Step 5: waiting ==
+GC -> R : applyEndOfTurnPatience()
+R -> VIP : losePatience()
+note right of VIP : not served yet: -5 (VIP rate)
+GC -> V : showTurnEnd(restaurant, 4, 18)
+@enduml

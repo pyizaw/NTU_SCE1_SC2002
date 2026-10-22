@@ -1,0 +1,88 @@
+@startuml 1-overview
+!include style.iuml
+title 1. Overview - who talks to whom
+
+allowmixing
+hide members
+hide circle
+
+package "view (boundary)" {
+  interface GameView BOUNDARY
+  class ConsoleView BOUNDARY
+  class SwingView <<extra>> BOUNDARY
+}
+
+package "controller (control)" {
+  class GameController CONTROL
+  class GameConfig CONTROL
+  class GameResult CONTROL
+}
+
+package "staff" {
+  abstract class Staff STAFF
+  class Host STAFF
+  class Waiter STAFF
+  class Chef STAFF
+  class Cashier STAFF
+}
+
+package "model (domain)" {
+  class Restaurant DOMAIN
+  class Table DOMAIN
+  abstract class Customer DOMAIN
+  class Order DOMAIN
+}
+
+package "menu & pricing" {
+  class Menu MENU
+  class MenuItem MENU
+  class PriceCalculator MENU
+  class HappyHour MENU
+}
+
+actor Manager
+
+Manager -down-> GameView : choices
+GameView <|.. ConsoleView
+GameView <|.. SwingView
+
+GameController -up-> GameView : asks for choices,\nshows state
+GameController --> GameConfig : base setting
+GameController ..> GameResult : judges the end
+GameController *-- Restaurant
+GameController *-- Staff : 4 staff
+GameController *-- Menu
+GameController *-- HappyHour
+
+Staff <|-- Host
+Staff <|-- Waiter
+Staff <|-- Chef
+Staff <|-- Cashier
+Staff ..> Restaurant : acts on
+
+Restaurant *-- "2" Table
+Restaurant o-- "0..6" Customer
+Table -- "0..1" Customer : occupant
+Customer -- "0..1" Order
+Order --> "1" MenuItem
+Menu o-- "6" MenuItem
+Waiter --> PriceCalculator : prices orders
+PriceCalculator --> HappyHour
+
+legend right
+  <b>How to read this set</b>
+  This page shows only the classes and how they connect.
+  Diagrams 2-5 zoom into each area with attributes,
+  operations, visibility and multiplicities.
+
+  <back:#E3F2FD> boundary </back> user interface
+  <back:#FFF3E0> control </back> runs the turns
+  <back:#F3E5F5> staff </back> one task per turn
+  <back:#E8F5E9> domain </back> game state and rules
+  <back:#FFFDE7> menu & pricing </back>
+
+  Rules never live in the view: the view only
+  collects choices; staff and domain objects
+  decide whether a choice is allowed.
+endlegend
+@enduml

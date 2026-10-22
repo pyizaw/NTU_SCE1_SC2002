@@ -1,0 +1,68 @@
+@startuml 6b-sequence-turns5to7-result
+!include style.iuml
+skinparam sequenceMessageAlign left
+skinparam responseMessageBelowArrow true
+skinparam sequence {
+  ParticipantBorderColor #5A5A5A
+  LifeLineBorderColor #9E9E9E
+  GroupBorderColor #9E9E9E
+  GroupHeaderFontStyle bold
+}
+title 6b. Sequence - turns 5 to 7: READY -> SERVED -> eating -> PAID, then the result after turn 18
+autonumber 38
+
+actor Manager
+boundary "view:\nGameView" as V BOUNDARY
+control ":GameController" as GC CONTROL
+participant ":Waiter" as W STAFF
+participant ":Cashier" as CA STAFF
+participant ":Restaurant" as R DOMAIN
+participant "vip:\nVIPCustomer" as VIP DOMAIN
+participant "o:Order" as O DOMAIN
+participant ":GameResult" as GR CONTROL
+
+== Turn 5: serve the dish that became READY on turn 4 ==
+GC -> V : askCommand(waiter, tasks)
+Manager -> V : "serve 2"
+GC -> W : serve(restaurant, 2, 5)
+W -> O : canBeServed(5)
+alt READY on an earlier turn (readyTurn 4 < 5)
+  W -> VIP : serve(5)
+  VIP -> O : markServed()
+  VIP -> VIP : reactToService(o, 5)
+  note right of VIP : a VIP has no reaction;\na Critic would check for cold food
+  W -> R : recordServed()
+  W --> GC : ok
+else still PREPARING, or became READY this turn
+  W --> GC : fail(reason)
+  GC -> V : showRejected(reason)
+end
+
+== Turn 6: eating finished ==
+GC -> R : finishEating(6)
+R -> VIP : finishEatingIfDone(6)
+note right of VIP : served on turn 5 < 6:\nstate = READY_TO_PAY
+
+== Turn 7: Cashier (automatic, one per turn, oldest first) ==
+GC -> CA : collectNextPayment(restaurant, 7)
+CA -> R : nextCustomerToPay(7)
+R --> CA : vip (became READY_TO_PAY on turn 6 < 7)
+CA -> R : collectPayment(vip)
+R -> VIP : pay()
+VIP -> O : markPaid()
+VIP -> VIP : table freed
+R -> R : revenue += $10.80,\nrecord satisfaction
+CA --> GC : ok "collected $10.80"
+
+== After turn 18: result check ==
+GC -> GR : evaluate(config, restaurant)
+GR -> R : paid count, revenue,\naverage satisfaction
+GR --> GC : result
+alt paid >= 4 AND revenue >= $45 AND average >= 60
+  GC -> V : showResult(result)
+  V -> Manager : VICTORY
+else any target missed
+  GC -> V : showResult(result)
+  V -> Manager : DEFEAT
+end
+@enduml

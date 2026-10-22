@@ -1,0 +1,125 @@
+@startuml 5-controller-and-views
+!include style.iuml
+title 5. Game controller and user interfaces
+
+class GameController CONTROL {
+  - nextCustomerId: int
+  + GameController(config: GameConfig, view: GameView)
+  + play(): GameResult
+  - playTurn(turn: int): void
+  - startOfTurnHappyHour(turn: int): void
+  - runStaffChoice(staff: Staff, handler, turn: int): void
+  - hostTask(cmd: StaffCommand): ActionResult
+  - waiterTask(cmd: StaffCommand, turn: int): ActionResult
+  - chefTask(cmd: StaffCommand, turn: int): ActionResult
+}
+
+class GameConfig CONTROL {
+  - maxTurns: int = 18
+  - tableCount: int = 2
+  - arrivals: Map<Integer, CustomerFactory>
+  - minPaidCustomers: int = 4
+  - minRevenueCents: int = 4500
+  - minAverageSatisfaction: int = 60
+  + {static} baseSetting(): GameConfig
+  + arrivalTypeName(turn: int): String
+}
+
+interface CustomerFactory <<functional>> CONTROL {
+  + create(id: int, arrivalTurn: int): Customer
+}
+
+class GameResult CONTROL {
+  - paidCustomers: int
+  - revenueCents: int
+  - averageSatisfaction: OptionalDouble
+  + {static} evaluate(c: GameConfig, r: Restaurant): GameResult
+  + isVictory(): boolean
+}
+
+class StaffCommand CONTROL {
+  - action: Action
+  - targetId: int
+  + {static} waitCommand(): StaffCommand
+}
+
+enum Action ENUMC {
+  SEAT
+  ORDER
+  SERVE
+  COOK
+  WAIT
+}
+
+interface GameView BOUNDARY {
+  + showWelcome(config: GameConfig, menu: Menu): void
+  + showTurnHeader(turn: int, maxTurns: int): void
+  + showStatus(r: Restaurant, turn: int, staff: List<Staff>): void
+  + askCommand(staff: Staff, tasks: List<String>): StaffCommand
+  + askActivateHappyHour(turn: int): boolean
+  + showHappyHourStatus(status: String): void
+  + showEvent(message: String): void
+  + showRejected(reason: String): void
+  + showTurnEnd(r: Restaurant, turn: int, maxTurns: int): void
+  + showResult(result: GameResult): void
+}
+
+class ConsoleView BOUNDARY {
+  - in: Scanner
+  - out: PrintStream
+  - echoInput: boolean
+}
+
+class SwingView <<extra>> BOUNDARY {
+  - input: BlockingQueue<String>
+  - autoSkip: boolean
+  + {static} create(): SwingView
+  + reset(): void
+}
+
+class CommandParser <<utility>> BOUNDARY {
+  + {static} isHelp(line: String): boolean
+  + {static} parse(line: String): StaffCommand
+}
+
+class Restaurant DOMAIN
+abstract class Staff STAFF
+class Menu MENU
+class HappyHour MENU
+hide Restaurant members
+hide Staff members
+hide Menu members
+hide HappyHour members
+
+GameController --> "1" GameView : view
+GameController --> "1" GameConfig : config
+GameController *-- "1" Restaurant
+GameController *-- "4" Staff : Host, Waiter,\nChef, Cashier
+GameController *-- "1" Menu
+GameController *-- "1" HappyHour
+GameController ..> GameResult : creates
+GameController ..> StaffCommand : receives
+StaffCommand +-- Action
+GameConfig o-- "6" CustomerFactory : arrivals
+GameView <|.. ConsoleView
+GameView <|.. SwingView
+ConsoleView ..> CommandParser
+SwingView ..> CommandParser
+
+note right of GameController
+  <b>One turn = six steps, always in order</b>
+  1 arrivals
+  2 manager choices (Host, Waiter, Chef)
+  3 kitchen and serving
+  4 eating and payment (Cashier)
+  5 waiting and abandonment
+  6 after turn 18: GameResult
+  A rejected choice is explained and asked again.
+end note
+
+note bottom of GameView
+  <b>Dependency inversion</b>: the controller only knows this
+  interface. The console and the optional window plug in
+  without any rule changing.
+end note
+@enduml

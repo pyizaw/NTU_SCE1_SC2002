@@ -1,0 +1,132 @@
+@startuml 2-customers-and-orders
+!include style.iuml
+title 2. Customers, orders and tables (domain)
+
+abstract class Customer DOMAIN {
+  + {static} MAX_SATISFACTION: int = 100
+  - id: int
+  - arrivalTurn: int
+  - satisfaction: int
+  - state: CustomerState
+  - table: Table
+  - order: Order
+  - servedTurn: int
+  - readyToPayTurn: int
+  ..behaviour (overridden)..
+  + {abstract} getTypeName(): String
+  + {abstract} getSatisfactionLossPerTurn(): int
+  + chooseDish(menu: Menu): MenuItem
+  + billFor(item: MenuItem): int
+  # reactToService(o: Order, turn: int): String
+  ..life cycle (checks state first)..
+  + seatAt(t: Table): void
+  + placeOrder(o: Order): void
+  + serve(turn: int): String
+  + finishEatingIfDone(turn: int): boolean
+  + canPay(turn: int): boolean
+  + pay(): void
+  + losePatience(): boolean
+  + recover(points: int): boolean
+  + leave(): void
+  + turnsUntilLeaving(): int
+  # reduceSatisfaction(points: int): void
+}
+
+class RegularCustomer DOMAIN {
+  + getTypeName(): String
+  + getSatisfactionLossPerTurn(): int
+}
+
+class VIPCustomer DOMAIN {
+  + getTypeName(): String
+  + getSatisfactionLossPerTurn(): int
+  + billFor(item: MenuItem): int
+}
+
+class CriticCustomer DOMAIN {
+  + {static} COLD_FOOD_PENALTY: int = 20
+  + getTypeName(): String
+  + getSatisfactionLossPerTurn(): int
+  + chooseDish(menu: Menu): MenuItem
+  # reactToService(o: Order, turn: int): String
+}
+
+class Order DOMAIN {
+  - priceCents: int {readOnly}
+  - takenTurn: int
+  - unitsDone: int
+  - status: OrderStatus
+  - readyTurn: int
+  + prepareOneUnit(turn: int): boolean
+  + canBeServed(turn: int): boolean
+  + markServed(): void
+  + markPaid(): void
+  + cancel(): void
+  + describeStatus(): String
+}
+
+class Table DOMAIN {
+  - number: int
+  - occupant: Customer
+  + seat(c: Customer): void
+  + vacate(): void
+  + isFree(): boolean
+}
+
+class MenuItem MENU {
+}
+hide MenuItem members
+
+enum CustomerState ENUMC {
+  WAITING
+  SEATED
+  ORDERED
+  EATING
+  READY_TO_PAY
+  PAID
+  LEFT
+  + isAwaitingService(): boolean
+}
+
+enum OrderStatus ENUMC {
+  PREPARING
+  READY
+  SERVED
+  PAID
+  CANCELLED
+}
+
+Customer <|-- RegularCustomer
+Customer <|-- VIPCustomer
+Customer <|-- CriticCustomer
+
+Customer "1" -- "0..1" Order : places >
+Table "0..1" -- "0..1" Customer : occupant >
+Order "*" --> "1" MenuItem : item
+Customer --> "1" CustomerState : state
+Order --> "1" OrderStatus : status
+
+note right of RegularCustomer
+  <b>Polymorphism</b> - same call, different behaviour:
+  |= Type |= loss/turn |= bill |= extra |
+  | Regular | 8 | full | - |
+  | VIP | 5 | 90% | - |
+  | Critic | 12 | full | most-units dish;\n-20 if served cold |
+  The controller never checks the type.
+end note
+
+note left of Customer
+  <b>Encapsulation</b>
+  All fields are private. State only changes
+  through the life-cycle methods, and each
+  one checks the current CustomerState first.
+  Satisfaction is kept between 0 and 100
+  inside the class.
+end note
+
+note bottom of Order
+  The price is <b>locked</b> when the order is
+  taken, so later Happy Hour changes or
+  discounts never affect it.
+end note
+@enduml

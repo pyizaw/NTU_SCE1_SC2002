@@ -1,0 +1,58 @@
+# Stage 1 reproducible VICTORY run (base setting, all Regular customers)
+# Strategy: keep the Waiter busy every turn and always finish the oldest
+# customer's meal before seating the next arrival.
+# T1
+seat 1
+wait
+# T2: Customer #1 orders Salad (1 unit) - Chef finishes it this turn
+order 1
+cook 1
+# T3: Salad was READY on turn 2, so it can be served now
+serve 1
+wait
+# T4
+seat 2
+wait
+# T5: Cashier collects from #1 automatically
+order 2
+cook 2
+# T6
+serve 2
+wait
+# T7
+seat 3
+wait
+# T8: #3 orders Pasta (2 units)
+order 3
+cook 3
+# T9: try to serve too early -> rejected, Waiter can choose again
+serve 3
+wait
+cook 3
+# T10: manager choice - serve #3 first, #4 waits in the queue one turn
+serve 3
+wait
+# T11
+seat 4
+wait
+# T12
+order 4
+cook 4
+# T13
+serve 4
+wait
+# T14
+seat 5
+wait
+# T15
+order 5
+cook 5
+# T16
+serve 5
+wait
+# T17
+seat 6
+wait
+# T18
+order 6
+cook 6

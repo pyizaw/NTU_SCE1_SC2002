@@ -112,6 +112,13 @@ public class ConsoleView implements GameView {
         out.println(turns.toString().stripTrailing());
         out.println(types.toString().stripTrailing());
         out.println();
+        out.println(" CUSTOMER TYPES (loss = satisfaction lost per turn while not yet served)");
+        out.println("   Regular  loss 8    pays full price");
+        out.println("   VIP      loss 5    gets 10% off the bill");
+        out.println("   Critic   loss 12   pays full price; orders the most demanding dish and");
+        out.println("                      loses 20 more if served a dish that went cold");
+        out.println("                      (it sat READY for more than one turn)");
+        out.println();
         printTurnGuide();
         out.println();
         printHelp();

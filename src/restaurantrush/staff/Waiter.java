@@ -113,9 +113,10 @@ public class Waiter extends Staff {
             if (!order.canBeServed(turn)) {
                 return ActionResult.fail("Order #" + order.getId() + " is not READY yet (" + order.describeStatus() + ").");
             }
-            customer.serve(turn);
+            String reaction = customer.serve(turn);
             restaurant.recordServed();
-            return ActionResult.ok("Served " + order.getItem().getName() + " to " + customer.getLabel() + ".");
+            return ActionResult.ok("Served " + order.getItem().getName() + " to " + customer.getLabel() + "."
+                    + (reaction.isEmpty() ? "" : " " + reaction));
         });
     }
 

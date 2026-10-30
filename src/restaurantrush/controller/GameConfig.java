@@ -5,7 +5,9 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
+import restaurantrush.model.customer.CriticCustomer;
 import restaurantrush.model.customer.RegularCustomer;
+import restaurantrush.model.customer.VIPCustomer;
 
 /**
  * The settings of a game: length, tables, arrival schedule and victory targets.
@@ -44,15 +46,16 @@ public final class GameConfig {
     /**
      * Base setting from the brief: 18 turns, 2 tables, one customer at the
      * start of turns 1, 4, 7, 10, 13 and 16; win with at least 4 paid
-     * customers, $45 revenue and average satisfaction 60.
+     * customers, $45 revenue and average satisfaction 60. The turn 4 arrival
+     * is a VIP and the turn 7 arrival is a Critic; the rest are Regular.
      *
      * @return the base setting
      */
     public static GameConfig baseSetting() {
         Map<Integer, CustomerFactory> arrivals = new TreeMap<>();
         arrivals.put(1, RegularCustomer::new);
-        arrivals.put(4, RegularCustomer::new);
-        arrivals.put(7, RegularCustomer::new);
+        arrivals.put(4, VIPCustomer::new);
+        arrivals.put(7, CriticCustomer::new);
         arrivals.put(10, RegularCustomer::new);
         arrivals.put(13, RegularCustomer::new);
         arrivals.put(16, RegularCustomer::new);

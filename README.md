@@ -2,7 +2,7 @@
 
 Turn-based restaurant management game for the command line, written in Java 17 (no external libraries, works offline).
 
-**Current stage: 1 - basic restaurant operation** (Regular customers, menu, Waiter, Chef, Cashier, tables, waiting queue, full turn sequence, victory and defeat).
+**Current stage: 2 - customer behaviour** (Stage 1 plus VIP and Critic customers).
 
 ## Build and run
 
@@ -23,12 +23,14 @@ Windows PowerShell compile: `javac --release 17 -d out (Get-ChildItem -Recurse s
 Replay a recorded run (commands are read from the file and echoed):
 
 ```bash
-java -cp out restaurantrush.Main runs/stage1-victory.txt
+java -cp out restaurantrush.Main runs/stage2-victory.txt
 ```
 
 ```bash
-java -cp out restaurantrush.Main runs/stage1-defeat.txt
+java -cp out restaurantrush.Main runs/stage2-defeat.txt
 ```
+
+The `runs/stage1-*` scripts belong to tag `stage-1` (all Regular customers).
 
 ## How to choose
 
@@ -45,5 +47,13 @@ Each staff member's possible tasks are listed as numbered options. Type the **op
 ## Documented rules
 
 * **Food choice:** customer number *n* orders the menu item at position *(n - 1) mod menu size*, so customers cycle Salad, Burger, Pasta, Salad, Burger, Pasta.
+* **Arrivals:** turn 4 is a **VIP** and turn 7 is a **Critic**; turns 1, 10, 13, 16 are Regular.
+
+| Customer | Loss per unserved turn | Bill | Special behaviour |
+|---|---|---|---|
+| Regular | 8  | full price | - |
+| VIP     | 5  | 10% off    | - |
+| Critic  | 12 | full price | **Order preference:** the most demanding item (most preparation units, ties go to the cheaper one). **Reaction to service:** hates cold food - if the dish sat READY for more than one turn before being served, loses 20 satisfaction at once. |
+
 * **Seating:** a seated customer is placed at the lowest-numbered free table.
 * **Display order:** the start-of-turn board is printed right after step 1 (arrivals) so the manager can see the customer who has just arrived.

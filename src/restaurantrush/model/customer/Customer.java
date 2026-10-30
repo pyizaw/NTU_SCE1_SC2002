@@ -87,6 +87,17 @@ public abstract class Customer {
         return item.getPriceCents();
     }
 
+    /**
+     * Hook called when the customer's dish is served. Default: no reaction.
+     *
+     * @param servedOrder the order just served
+     * @param turn        current turn
+     * @return a description of the reaction, or an empty string
+     */
+    protected String reactToService(Order servedOrder, int turn) {
+        return "";
+    }
+
     // ---------------------------------------------------------------------
     // Life cycle (state changes are validated here)
     // ---------------------------------------------------------------------
@@ -118,12 +129,14 @@ public abstract class Customer {
      * The Waiter serves the customer's READY dish.
      *
      * @param turn current turn
+     * @return the customer's reaction to the service, or an empty string
      */
-    public void serve(int turn) {
+    public String serve(int turn) {
         requireState(CustomerState.ORDERED);
         order.markServed();
         servedTurn = turn;
         state = CustomerState.EATING;
+        return reactToService(order, turn);
     }
 
     /**

@@ -19,6 +19,7 @@ Turn-based restaurant management game for the command line, written in Java 17 (
 8. [Window version (optional extra)](#window-version-optional-extra-tag-gui-extra)
 9. [AI history](#ai-history)
 10. [Video](#video)
+11. [Report](#report)
 
 ## Build and run
 
@@ -206,11 +207,16 @@ Each member's AI chat logs are on their own branch, one folder per stage:
 
 Link: [VIDEO LINK]
 
-| Time | Part |
-|---|---|
-| [0:00] | Introduction and team |
-| [0:00] | Stage 1 demo (`runs/stage1-victory.txt`) |
-| [0:00] | Stage 2 demo: VIP and Critic |
-| [0:00] | Stage 3 demo: Host, combo, Happy Hour |
-| [0:00] | Class and sequence diagrams |
-| [0:00] | Design reflection |
+| # | Segment (brief section 6.2) | Time | Presenter |
+|---|---|---|---|
+| 1 | The game launching from the submitted project | [mm:ss] | [name] |
+| 2 | Meaningful manager choices, including a decision where staff are constrained (Waiter on turn 13, `runs/stage3-victory.txt`) | [mm:ss] | [name] |
+| 3 | A dish going READY → SERVED → payment | [mm:ss] | [name] |
+| 4 | A VIP or Critic behaviour | [mm:ss] | [name] |
+| 5 | A Stage 3 feature (Host, combo, Happy Hour) | [mm:ss] | [name] |
+| 6 | One victory and one defeat (`runs/stage3-victory.txt`, `runs/stage3-defeat.txt`) | [mm:ss] | [name] |
+| 7 | The stage tag comparisons and the diagrams | [mm:ss] | [name] |
+
+## Report
+
+[`docs/report/Restaurant_Rush_Report.pdf`](docs/report/Restaurant_Rush_Report.pdf) (Word source alongside). Console screenshots used in the report are in [`docs/screenshots`](docs/screenshots).

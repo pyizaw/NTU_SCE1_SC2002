@@ -1,0 +1,85 @@
+@startuml sequence-part2
+!include style.iuml
+skinparam sequenceMessageAlign left
+skinparam responseMessageBelowArrow true
+skinparam sequence {
+  ParticipantBorderColor #5A5A5A
+  LifeLineBorderColor #9E9E9E
+  GroupBorderColor #9E9E9E
+  GroupHeaderFontStyle bold
+}
+title Sequence part 2 (Stage 3) - turns 14-18: READY -> SERVED -> eating -> PAID, then the result check
+autonumber 44
+
+actor Manager
+boundary ":ConsoleView" as V BOUNDARY
+control ":GameController" as GC CONTROL
+participant ":Waiter" as W STAFF
+participant ":Chef" as C STAFF
+participant ":Cashier" as CA STAFF
+participant ":Restaurant" as R DOMAIN
+participant "c5:\nRegularCustomer" as C5 DOMAIN
+participant "o5:Order" as O DOMAIN
+participant ":GameResult" as GR CONTROL
+
+== Turns 14-15: Chef finishes the 3-unit combo ==
+loop turn = 14, 15
+  GC -> V : askCommand(chef, [cook 5, ...])
+  Manager -> V : "cook 5"
+  GC -> C : carryOut(cook 5, restaurant, turn)
+  C -> O : prepareOneUnit(turn)
+  alt last unit done (turn 15)
+    O -> O : status = READY,\nreadyTurn = 15
+  end
+end
+note over GC, O : turn 14: the Waiter serves #4 instead (the choice delayed from turn 13)
+
+== Turn 16: Waiter serves #5 ==
+GC -> V : askCommand(waiter, [serve 5, wait])
+Manager -> V : "serve 5"
+GC -> W : carryOut(serve 5, restaurant, 16)
+W -> O : canBeServed(16)
+alt READY on an earlier turn (readyTurn 15 < 16)
+  W -> C5 : serve(16)
+  C5 -> O : markServed()
+  C5 -> C5 : reactToService(o5, 16)
+  note right of C5 : polymorphic hook: a Regular has no\nreaction; a Critic checks for cold food
+  W -> R : recordServed()
+  W --> GC : ok "Served Salad + Pasta Combo to #5"
+else still PREPARING, or READY only this turn
+  W --> GC : fail(reason)
+  GC -> V : showRejected(waiter, reason)
+end
+
+== Turn 17: eating finished ==
+GC -> R : finishEating(17)
+R -> C5 : finishEatingIfDone(17)
+note right of C5 : served on turn 16 < 17:\nstate = READY_TO_PAY
+
+== Turn 18: Cashier (automatic, at most one per turn, oldest first) ==
+GC -> CA : collectNextPayment(restaurant, 18)
+CA -> R : nextCustomerToPay(18)
+R --> CA : c5 (READY_TO_PAY since turn 17 < 18)
+CA -> R : collectPayment(c5)
+R -> C5 : pay()
+C5 -> O : markPaid()
+C5 -> C5 : releaseTable()
+R -> R : revenue += 1944,\nrecord satisfaction 84
+CA --> GC : ok "collected $19.44"
+
+== After turn 18: result check ==
+GC -> GR : evaluate(config, restaurant)
+GR -> R : getPaidCount(), getRevenueCents(),\ngetAveragePaidSatisfaction()
+GR --> GC : result
+GC -> V : showResult(result)
+alt paid >= 4 AND revenue >= $45.00 AND average >= 60
+  V -> Manager : VICTORY - 5 paid, $87.84, average 86.6
+else any target missed
+  V -> Manager : DEFEAT
+end
+note over Manager, GR #FFFBEA
+  <b>Outcome:</b> #5 pays $19.44 on the last turn, so 5 customers pay instead of 4 and revenue is $87.84 instead of $68.40.
+  Had the Waiter served #4 first on turn 13, #5's combo would only be READY on turn 16, served on 17, and #5 could not pay within 18 turns.
+  Happy Hour also cut #5's bill from $24.30 to $19.44 and lifted #4 from 76 to 98 satisfaction, raising the average.
+end note
+@enduml

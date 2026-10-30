@@ -1,0 +1,347 @@
+@startuml stage1-class
+!include style.iuml
+title Stage 1 class diagram - basic restaurant operation (tag stage-1)
+hide circle
+hide empty members
+set separator none
+left to right direction
+
+package "view (boundary)" {
+  class CommandParser BOUNDARY {
+    {static} +isHelp(line: String): boolean
+    {static} +parse(line: String, options: List<TaskOption>): StaffCommand
+    {static} +parse(line: String): StaffCommand
+  }
+  class ConsoleView BOUNDARY {
+    {static} -WIDTH: int
+    {static} -DOUBLE_LINE: String
+    {static} -LINE: String
+    {static} -AT_RISK_TURNS: int
+    -in: Scanner
+    -out: PrintStream
+    -echoInput: boolean
+    -inputEnded: boolean
+    -config: GameConfig
+    -eventsInStep: int
+    -currentStep: TurnStep
+    -satisfactionAtStart: Map<Integer, Integer>
+    -- implements every GameView operation --
+  }
+  interface GameView BOUNDARY {
+    +showWelcome(config: GameConfig, menu: Menu): void
+    +showTurnHeader(turn: int, maxTurns: int): void
+    +showStep(step: TurnStep): void
+    +showStatus(restaurant: Restaurant, turn: int, staff: List<Staff>): void
+    +askCommand(staff: Staff, options: List<TaskOption>): StaffCommand
+    +showEvent(message: String): void
+    +showRejected(staff: Staff, reason: String): void
+    +showTurnEnd(restaurant: Restaurant, turn: int, maxTurns: int): void
+    +showResult(result: GameResult): void
+  }
+}
+package "controller (control)" {
+  interface CustomerFactory CONTROL {
+    +create(id: int, arrivalTurn: int): Customer
+  }
+  class GameConfig CONTROL {
+    -maxTurns: int
+    -tableCount: int
+    -arrivals: NavigableMap<Integer, CustomerFactory>
+    -minPaidCustomers: int
+    -minRevenueCents: int
+    -minAverageSatisfaction: int
+    {static} +baseSetting(): GameConfig
+    +arrivalTypeName(turn: int): String
+    +nextArrivalAfter(turn: int): int
+  }
+  class GameController CONTROL {
+    -config: GameConfig
+    -restaurant: Restaurant
+    -menu: Menu
+    -directedStaff: List<Staff>
+    -cashier: Cashier
+    -view: GameView
+    -nextCustomerId: int
+    +play(): GameResult
+    -playTurn(turn: int): void
+    -runStaffChoice(staff: Staff, turn: int): void
+    -allStaff(): List<Staff>
+  }
+  class GameResult CONTROL {
+    -paidCustomers: int
+    -revenueCents: int
+    -servedCount: int
+    -unhappyDepartures: int
+    -averageSatisfaction: OptionalDouble
+    -paidTargetMet: boolean
+    -revenueTargetMet: boolean
+    -satisfactionTargetMet: boolean
+    -config: GameConfig
+    {static} +evaluate(config: GameConfig, restaurant: Restaurant): GameResult
+    +isVictory(): boolean
+    +isPaidTargetMet(): boolean
+    +isRevenueTargetMet(): boolean
+    +isSatisfactionTargetMet(): boolean
+  }
+  enum TurnStep CONTROL {
+    ARRIVALS
+    MANAGER_CHOICES
+    EATING_AND_PAYMENT
+    WAITING_AND_ABANDONMENT
+    ..
+    -number: String
+    -title: String
+  }
+}
+package "staff" {
+  class Cashier STAFF {
+    +describeCommands(): String
+    +collectNextPayment(restaurant: Restaurant, turn: int): Optional<ActionResult>
+    +availableTasks(restaurant: Restaurant, turn: int): List<TaskOption>
+    +summariseTasks(restaurant: Restaurant, turn: int): String
+  }
+  class Chef STAFF {
+    +describeCommands(): String
+    #handle(command: StaffCommand, restaurant: Restaurant, turn: int): ActionResult
+    +cook(restaurant: Restaurant, orderId: int, turn: int): ActionResult
+    +ordersToCook(restaurant: Restaurant): List<Order>
+    +availableTasks(restaurant: Restaurant, turn: int): List<TaskOption>
+  }
+  abstract class Staff STAFF {
+    -taskUsed: boolean
+    {abstract} +availableTasks(restaurant: Restaurant, turn: int): List<TaskOption>
+    +summariseTasks(restaurant: Restaurant, turn: int): String
+    +startTurn(): void
+    +hasActed(): boolean
+    +carryOut(command: StaffCommand, restaurant: Restaurant, turn: int): ActionResult
+    #handle(command: StaffCommand, restaurant: Restaurant, turn: int): ActionResult
+    {abstract} +describeCommands(): String
+    +waitTurn(): ActionResult
+    #perform(task: Supplier<ActionResult>): ActionResult
+  }
+  class StaffCommand STAFF {
+    -action: Action
+    -targetId: int
+    {static} +waitCommand(): StaffCommand
+    +toCommandText(): String
+    +toString(): String
+  }
+  enum "StaffCommand.Action" as Action STAFF {
+    SEAT
+    ORDER
+    SERVE
+    COOK
+    WAIT
+    ..
+    +getKeyword(): String
+  }
+  class TaskOption STAFF {
+    -command: StaffCommand
+    -description: String
+    {static} +waitOption(): TaskOption
+    +isWait(): boolean
+  }
+  class Waiter STAFF {
+    -menu: Menu
+    +describeCommands(): String
+    #handle(command: StaffCommand, restaurant: Restaurant, turn: int): ActionResult
+    +seat(restaurant: Restaurant, customerId: int): ActionResult
+    +takeOrder(restaurant: Restaurant, customerId: int, turn: int): ActionResult
+    +serve(restaurant: Restaurant, customerId: int, turn: int): ActionResult
+    +availableTasks(restaurant: Restaurant, turn: int): List<TaskOption>
+  }
+}
+package "model (entities)" {
+  class ActionResult DOMAIN {
+    -success: boolean
+    -message: String
+    {static} +ok(message: String): ActionResult
+    {static} +fail(reason: String): ActionResult
+    +isSuccess(): boolean
+  }
+  class Menu DOMAIN {
+    -items: List<MenuItem>
+    {static} +standard(): Menu
+    +add(item: MenuItem): void
+    +get(index: int): MenuItem
+    +size(): int
+  }
+  class MenuItem DOMAIN {
+    -name: String
+    -priceCents: int
+    -prepUnits: int
+    +toString(): String
+  }
+  class Order DOMAIN {
+    -customer: Customer
+    -item: MenuItem
+    -priceCents: int
+    -takenTurn: int
+    -unitsDone: int
+    -status: OrderStatus
+    -readyTurn: int
+    +prepareOneUnit(turn: int): boolean
+    +canBeServed(turn: int): boolean
+    +markServed(): void
+    +markPaid(): void
+    +cancel(): void
+    +describeStatus(): String
+  }
+  class Restaurant DOMAIN {
+    -tables: List<Table>
+    -waitingQueue: List<Customer>
+    -customers: List<Customer>
+    -paidSatisfactions: List<Integer>
+    -revenueCents: int
+    -servedCount: int
+    -unhappyDepartures: int
+    +admit(customer: Customer): void
+    +findCustomer(id: int): Optional<Customer>
+    +findFreeTable(): Optional<Table>
+    +seatCustomer(customerId: int): ActionResult
+    +recordServed(): void
+    +finishEating(turn: int): List<Customer>
+    +nextCustomerToPay(turn: int): Optional<Customer>
+    +collectPayment(customer: Customer): int
+    +applyEndOfTurnPatience(): List<Customer>
+  }
+  class Table DOMAIN {
+    -number: int
+    -occupant: Customer
+    +seat(customer: Customer): void
+    +vacate(): void
+    +isFree(): boolean
+  }
+}
+package "model.customer" {
+  abstract class Customer DOMAIN {
+    {static} +MAX_SATISFACTION: int
+    -id: int
+    -arrivalTurn: int
+    -satisfaction: int
+    -state: CustomerState
+    -table: Table
+    -order: Order
+    -servedTurn: int
+    -readyToPayTurn: int
+    +chooseDish(menu: Menu): MenuItem
+    +billFor(item: MenuItem): int
+    +seatAt(newTable: Table): void
+    +placeOrder(newOrder: Order): void
+    +serve(turn: int): void
+    +finishEatingIfDone(turn: int): boolean
+    +canPay(turn: int): boolean
+    +pay(): void
+    +losePatience(): boolean
+    +leave(): void
+    +turnsUntilLeaving(): int
+    #reduceSatisfaction(points: int): void
+    -releaseTable(): void
+    -requireState(expected: CustomerState): void
+  }
+  class RegularCustomer DOMAIN {
+    {static} -LOSS_PER_TURN: int
+  }
+}
+package "enums" {
+  enum CustomerState ENUMC {
+    WAITING
+    SEATED
+    ORDERED
+    EATING
+    READY_TO_PAY
+    PAID
+    LEFT
+    ..
+    +isAwaitingService(): boolean
+  }
+  enum OrderStatus ENUMC {
+    PREPARING
+    READY
+    SERVED
+    PAID
+    CANCELLED
+    ..
+  }
+}
+package "util" {
+  class Money ENUMC {
+    {static} +format(cents: int): String
+    {static} +percentOf(cents: int, percent: int): int
+  }
+}
+
+GameController --> "1" GameConfig : config
+GameController *-- "1" Restaurant : restaurant
+GameController *-- "1" Menu : menu
+GameController *-- "2" Staff : directedStaff\n{ordered}
+GameController *-- "1" Cashier : cashier
+GameController --> "1" GameView : view
+GameController ..> GameResult : <<creates>>
+GameController ..> TurnStep
+GameConfig o-- "6" CustomerFactory : arrivals\n(turn -> factory)
+CustomerFactory ..> Customer : <<creates>>
+GameResult --> "1" GameConfig : config
+ConsoleView ..|> GameView
+ConsoleView ..> CommandParser
+CommandParser ..> StaffCommand
+Staff <|-- Waiter
+Staff <|-- Chef
+Staff <|-- Cashier
+Staff ..> TaskOption : offers
+Staff ..> ActionResult
+Staff ..> Restaurant : acts on
+TaskOption *-- "1" StaffCommand : command
+StaffCommand +-- Action
+Waiter --> "1" Menu : menu
+Waiter ..> Order : <<creates>>
+Restaurant *-- "2" Table : tables
+Restaurant o-- "0..*" Customer : customers,\nwaitingQueue
+Table --> "0..1" Customer : occupant
+Customer --> "0..1" Table : table
+Customer "1" -- "0..1" Order : order >
+Order --> "1" MenuItem : item
+Customer --> "1" CustomerState : state
+Order --> "1" OrderStatus : status
+Customer <|-- RegularCustomer
+Menu o-- "3" MenuItem : items\n{ordered}
+
+note as N1
+<b>Encapsulation</b>
+Customer's fields are private; state only changes
+through seatAt / placeOrder / serve / pay / leave,
+which check the current CustomerState first.
+Staff.perform() enforces one task per turn and only
+uses the task when the action succeeds.
+end note
+N1 .. Customer
+N1 .. Staff
+note as N2
+<b>Polymorphism / extension point</b>
+Customer is abstract: getTypeName() and
+getSatisfactionLossPerTurn() are overridden, and
+chooseDish() / billFor() have default rules a
+subclass may override.
+end note
+N2 .. Customer
+note as N3
+<b>Polymorphism</b>
+GameController calls staff.carryOut(cmd, ...) for
+every directed role; each subclass decides in
+handle() which commands it accepts. A new role
+is a new subclass registered in directedStaff.
+end note
+N3 .. Staff
+note as N4
+<b>Composition</b>
+Restaurant creates and owns its Tables;
+GameController creates and owns the staff,
+menu and restaurant of one game.
+end note
+N4 .. Restaurant
+
+legend right
+  + public   - private   # protected   {static} underlined   {abstract} italic
+  Simple get...() accessors are omitted to keep the diagram readable.
+endlegend
+@enduml

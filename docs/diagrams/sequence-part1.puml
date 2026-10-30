@@ -1,0 +1,112 @@
+@startuml sequence-part1
+!include style.iuml
+skinparam sequenceMessageAlign left
+skinparam responseMessageBelowArrow true
+skinparam sequence {
+  ParticipantBorderColor #5A5A5A
+  LifeLineBorderColor #9E9E9E
+  GroupBorderColor #9E9E9E
+  GroupHeaderFontStyle bold
+}
+title Sequence part 1 (Stage 3) - turn 13: arrival, Happy Hour, Host seats, Waiter priority, order priced and cooked
+autonumber
+
+actor Manager
+boundary ":ConsoleView" as V BOUNDARY
+control ":GameController" as GC CONTROL
+participant ":HappyHour" as HH MENU
+participant ":Host" as H STAFF
+participant ":Waiter" as W STAFF
+participant ":PriceCalculator" as PC MENU
+participant ":Chef" as C STAFF
+participant ":Restaurant" as R DOMAIN
+participant "c5:\nRegularCustomer" as C5 DOMAIN
+
+note over Manager, C5 #FFFBEA
+  <b>Use case:</b> the manager uses Happy Hour and Waiter priority so that late customer #5 still pays before the game ends.
+  <b>Stage:</b> 3 (tag stage-3), reproducible with runs/stage3-victory.txt.
+  <b>Starting conditions (start of turn 13):</b> revenue $46.80, 3 paid, average 83.7; Table 1 free; Table 2 holds #4 Regular whose
+  Salad + Burger Combo is already READY; Happy Hour unused; customer #5 Regular is scheduled to arrive on turn 13.
+  This all runs inside GameController.play(): <b>loop turn = 1..18</b> (no early ending); each turn starts with staff.startTurn().
+end note
+
+== Step 1: arrival ==
+GC -> GC : config.getArrivals().get(13)\n.create(5, 13)  (CustomerFactory)
+create C5
+GC -> C5 : new RegularCustomer(5, 13)
+GC -> R : admit(c5)
+GC -> V : showStatus(restaurant, 13, allStaff)
+
+== Start of turn: Happy Hour (Stage 3 behaviour) ==
+opt happyHour.canActivate()
+  GC -> V : askActivateHappyHour(13)
+  Manager -> V : "y"
+  V --> GC : true
+  GC -> HH : activate(13)
+end
+GC -> V : showHappyHourStatus(happyHour.describe(13))
+opt happyHour.isActive(13)
+  GC -> R : recoverWaitingCustomers(15)
+  R -> C5 : recover(15)
+  note right of C5 : every customer still waiting for a table\nor food gains 15 (max 100): #5 stays 100,\n#4 (Table 2) goes 76 -> 91
+end
+
+== Steps 2-3: for each staff in directedStaff = [Host, Waiter, Chef] ==
+loop until host.hasActed()
+  GC -> V : askCommand(host, host.availableTasks(...))
+  Manager -> V : "seat 5"
+  GC -> H : carryOut(seat 5, restaurant, 13)
+  H -> H : handle(...) -> seat(restaurant, 5)
+  H -> R : seatCustomer(5)
+  alt free table and #5 is WAITING
+    R -> C5 : seatAt(table1)
+    H --> GC : ok (task used)
+  else not allowed
+    H --> GC : fail(reason)
+    GC -> V : showRejected(host, reason)
+    note right of GC : task NOT used up,\nask again
+  end
+end
+
+loop until waiter.hasActed()
+  GC -> V : askCommand(waiter, [order 5, serve 4, wait])
+  note over Manager, V #FFFBEA
+    <b>Constrained choice:</b> the Waiter has ONE task.
+    Serving #4's READY combo now would delay #5's
+    3-unit order by a turn, and #5 could not pay by turn 18.
+  end note
+  Manager -> V : "order 5"
+  GC -> W : carryOut(order 5, restaurant, 13)
+  W -> W : handle(...) -> takeOrder(restaurant, 5, 13)
+  W -> C5 : chooseDish(menu)
+  C5 --> W : Salad + Pasta Combo\n(customer #5 -> 5th menu item)
+  W -> PC : priceFor(c5, combo, 13)
+  PC -> C5 : billFor(combo)
+  C5 --> PC : 2430 (full price for a Regular)
+  PC -> HH : apply(2430, 13)
+  HH --> PC : 1944 (Happy Hour active: 20% off)
+  PC --> W : 1944
+  create participant "o5:Order" as O DOMAIN
+  W -> O : new Order(c5, combo, 1944, 13)
+  W -> C5 : placeOrder(o5)
+  W --> GC : ok "Bill locked at $19.44"
+end
+
+loop until chef.hasActed()
+  GC -> V : askCommand(chef, [cook 5, wait])
+  Manager -> V : "cook 5"
+  GC -> C : carryOut(cook 5, restaurant, 13)
+  C -> O : prepareOneUnit(13)
+  note right of O : 1 of 3 units done\n(PREPARING 1/3)
+end
+
+== Step 4: eating and payment ==
+GC -> R : finishEating(13)
+note right of GC : nobody is eating yet; nobody READY_TO_PAY
+
+== Step 5: waiting and abandonment ==
+GC -> R : applyEndOfTurnPatience()
+R -> C5 : losePatience()
+note right of C5 : not served yet: -8 (Regular rate)\nsatisfaction 100 -> 92
+GC -> V : showTurnEnd(restaurant, 13, 18)
+@enduml

@@ -1,0 +1,58 @@
+# Stage 1 reproducible DEFEAT run (base setting, all Regular customers)
+# Mistake: the manager leaves the Chef idle for the first seven turns, so
+# early customers lose a lot of satisfaction and later ones queue for too long.
+# T1
+seat 1
+wait
+# T2
+order 1
+wait
+# T3
+wait
+wait
+# T4
+seat 2
+wait
+# T5
+order 2
+wait
+# T6
+wait
+wait
+# T7: #3 arrives but both tables are taken
+seat 3
+wait
+wait
+# T8: the Chef finally starts cooking
+wait
+cook 1
+# T9
+serve 1
+cook 2
+# T10
+serve 2
+wait
+# T11: tables still occupied until the Cashier frees them at step 4
+wait
+wait
+# T12
+seat 3
+wait
+# T13
+seat 4
+wait
+# T14
+order 3
+cook 3
+# T15
+order 4
+cook 3
+# T16
+serve 3
+cook 4
+# T17
+serve 4
+wait
+# T18: "seat 5" is rejected - both tables stay occupied until step 4
+seat 5
+wait

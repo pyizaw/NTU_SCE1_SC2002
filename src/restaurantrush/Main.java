@@ -7,18 +7,27 @@ import java.util.Scanner;
 import restaurantrush.controller.GameConfig;
 import restaurantrush.controller.GameController;
 import restaurantrush.view.ConsoleView;
+import restaurantrush.view.SwingView;
 
 /**
- * Entry point. Run with no arguments to play with the keyboard, or pass a
- * script file of commands (one per line) to replay a recorded game:
- * <pre>java -cp out restaurantrush.Main runs/stage1-victory.txt</pre>
+ * Entry point.
+ * <ul>
+ *   <li>No arguments: play in the terminal.</li>
+ *   <li>{@code --gui}: play in a window.</li>
+ *   <li>A file path: replay a recorded game from a command script, e.g.
+ *       <pre>java -cp out restaurantrush.Main runs/stage3-victory.txt</pre></li>
+ * </ul>
  */
 public class Main {
 
     /**
-     * @param args optional path to a command script
+     * @param args optional {@code --gui} or path to a command script
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
+        if (args.length > 0 && args[0].equalsIgnoreCase("--gui")) {
+            startWindow();
+            return;
+        }
         Scanner in;
         boolean scripted = args.length > 0;
         if (scripted) {
@@ -33,5 +42,23 @@ public class Main {
         }
         ConsoleView view = new ConsoleView(in, System.out, scripted);
         new GameController(GameConfig.baseSetting(), view).play();
+    }
+
+    /**
+     * Opens the window and runs the game on a separate thread, so the window
+     * stays responsive while the controller waits for the player.
+     */
+    private static void startWindow() throws Exception {
+        SwingView view = SwingView.create();
+        Runnable newGame = () -> {
+            Thread game = new Thread(() -> new GameController(GameConfig.baseSetting(), view).play(), "game");
+            game.setDaemon(true);
+            game.start();
+        };
+        view.setRestartAction(() -> {
+            view.reset();
+            newGame.run();
+        });
+        newGame.run();
     }
 }

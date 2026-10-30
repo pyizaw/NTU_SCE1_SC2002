@@ -6,7 +6,7 @@ Turn-based restaurant management game for the command line, written in Java 17 (
 
 ## Build and run
 
-IntelliJ IDEA: *File > Open* this folder, set the Project SDK to any JDK 17+ if asked, then run the **Play** run configuration.
+IntelliJ IDEA: *File > Open* this folder, set the Project SDK to any JDK 17+ if asked, then run **Play (terminal)** or **Play (window)**.
 
 Command line (from this folder):
 
@@ -19,6 +19,12 @@ java -cp out restaurantrush.Main
 ```
 
 Windows PowerShell compile: `javac --release 17 -d out (Get-ChildItem -Recurse src -Filter *.java).FullName`
+
+Optional window version (same game and rules, see below):
+
+```bash
+java -cp out restaurantrush.Main --gui
+```
 
 Replay a recorded run (commands are read from the file and echoed):
 
@@ -62,3 +68,9 @@ Each staff member's possible tasks are listed as numbered options. Type the **op
 * **Happy Hour:** offered at the start of each turn until used (once per game). Lasts that turn and the next; the remaining duration is shown. Orders taken while it is active get 20% off, applied after the VIP discount; the price is locked when the order is taken. At the start of each active turn, customers waiting for a table or for food recover 15 satisfaction (max 100).
 * **Seating:** a seated customer is placed at the lowest-numbered free table.
 * **Display order:** the start-of-turn board is printed right after step 1 (arrivals) so the manager can see the customer who has just arrived.
+
+## Window version (optional extra, tag `gui-extra`)
+
+![Window version, turn 13 of the Stage 3 victory run](docs/screenshots/window-turn13.png)
+
+`--gui` opens a Swing window. `SwingView` implements the same `GameView` interface as `ConsoleView`, so `GameController` and every rule class run unchanged. The header shows progress towards each target (green once met), the upcoming arrivals and Happy Hour; each customer card shows satisfaction and how many more unserved turns they can take. Click a task button or press its number key; staff whose only option is "wait" are skipped automatically (untick the box to choose yourself).

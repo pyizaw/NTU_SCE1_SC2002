@@ -215,6 +215,21 @@ public abstract class Customer {
     }
 
     /**
+     * A customer still waiting for a table or food recovers satisfaction
+     * (used by Happy Hour), never above {@link #MAX_SATISFACTION}.
+     *
+     * @param points points to recover
+     * @return true if the customer was waiting and recovered
+     */
+    public boolean recover(int points) {
+        if (!state.isAwaitingService()) {
+            return false;
+        }
+        satisfaction = Math.min(MAX_SATISFACTION, satisfaction + points);
+        return true;
+    }
+
+    /**
      * Lowers satisfaction, never below 0.
      *
      * @param points points to lose

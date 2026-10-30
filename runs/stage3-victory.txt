@@ -1,0 +1,93 @@
+# Stage 3 reproducible VICTORY run (base setting: #2 VIP, #3 Critic, Host,
+# combo menu and Happy Hour).
+# Each turn reads: [Happy Hour y/n while unused] / Host / Waiter / Chef.
+# Menu order: Salad, Burger, Pasta, Salad+Burger, Salad+Pasta, Burger+Pasta,
+# so #4, #5, #6 order combos and the Critic picks the Salad+Pasta combo.
+# Key decisions: the Host seats while the Waiter takes orders in the same turn;
+# on turn 13 the Waiter takes #5's 3-unit combo BEFORE serving #4, so it can
+# still be paid on turn 18; Happy Hour is saved for turns 13-14.
+# T1
+n
+seat 1
+order 1
+cook 1
+# T2
+n
+wait
+serve 1
+wait
+# T3
+n
+wait
+wait
+wait
+# T4: VIP #2 orders Burger at 10% off
+n
+seat 2
+order 2
+cook 2
+# T5
+n
+wait
+serve 2
+wait
+# T6
+n
+wait
+wait
+wait
+# T7: Critic #3 orders the Salad + Pasta Combo (3 units)
+n
+seat 3
+order 3
+cook 3
+# T8
+n
+wait
+wait
+cook 3
+# T9
+n
+wait
+wait
+cook 3
+# T10: serve the Critic while the combo is hot; Host seats #4 at the same time
+n
+seat 4
+serve 3
+wait
+# T11: #4 orders the Salad + Burger Combo (2 units)
+n
+wait
+order 4
+cook 4
+# T12
+n
+wait
+wait
+cook 4
+# T13: switch on Happy Hour; #5's order gets 20% off and #4 recovers
+y
+seat 5
+order 5
+cook 5
+# T14: Happy Hour still active (last turn)
+wait
+serve 4
+cook 5
+# T15
+wait
+wait
+cook 5
+# T16: both tables are still taken while staff act (#4 pays at step 4)
+wait
+serve 5
+wait
+# T17: the table #4 freed is ready for #6
+seat 6
+order 6
+cook 6
+# T18: #5 pays on the final turn
+wait
+wait
+cook 6

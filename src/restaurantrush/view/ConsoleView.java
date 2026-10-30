@@ -112,6 +112,11 @@ public class ConsoleView implements GameView {
         out.println(turns.toString().stripTrailing());
         out.println(types.toString().stripTrailing());
         out.println();
+        out.println(" HAPPY HOUR - can be switched on once per game, at the start of a turn.");
+        out.println("   It lasts that turn and the next. Orders taken while it is active get 20%");
+        out.println("   off (after the VIP discount), and customers still waiting for a table or");
+        out.println("   food recover 15 satisfaction at the start of each active turn.");
+        out.println();
         out.println(" CUSTOMER TYPES (loss = satisfaction lost per turn while not yet served)");
         out.println("   Regular  loss 8    pays full price");
         out.println("   VIP      loss 5    gets 10% off the bill");
@@ -128,8 +133,10 @@ public class ConsoleView implements GameView {
     private void printTurnGuide() {
         out.println(" HOW A TURN WORKS");
         out.println("   Step 1    Arrivals: the scheduled customer joins the waiting queue.");
-        out.println("   Step 2-3  Your choices: the Waiter does ONE task (seat, take an order or");
-        out.println("             serve), then the Chef does ONE preparation unit.");
+        out.println("             Happy Hour can then be switched on (once per game).");
+        out.println("   Step 2-3  Your choices: the Host may seat ONE customer, the Waiter does ONE");
+        out.println("             task (seat, take an order or serve), then the Chef does ONE");
+        out.println("             preparation unit.");
         out.println("   Step 4    Customers served on an earlier turn finish eating; the Cashier");
         out.println("             charges one READY_TO_PAY customer (oldest first).");
         out.println("   Step 5    Every customer not yet served loses satisfaction. A customer at");
@@ -144,6 +151,7 @@ public class ConsoleView implements GameView {
         out.println("   Type the option number shown in the list, e.g.  1");
         out.println("   or type a command:");
         printCommandList();
+        out.println("     Happy Hour: answer y or n when asked at the start of a turn");
         out.println("   Short forms: s = seat, o = order, v = serve, c = cook, w = wait.");
         out.println("   When 'wait' is the only option, just press Enter.");
         out.println("   Type 'help' at any prompt to see this again.");
@@ -151,6 +159,7 @@ public class ConsoleView implements GameView {
 
     /** One line per manager-directed role. */
     private void printCommandList() {
+        out.println("     Host   : seat n | wait   (acts before the Waiter)");
         out.println("     Waiter : seat n | order n | serve n | wait");
         out.println("     Chef   : cook n | wait");
     }
@@ -260,6 +269,31 @@ public class ConsoleView implements GameView {
                 printWrapped("   !! ", e.getMessage());
             }
         }
+    }
+
+    @Override
+    public boolean askActivateHappyHour(int turn) {
+        out.println();
+        while (true) {
+            out.print("   Switch on Happy Hour now? It lasts this turn and next (y/n, Enter = no) > ");
+            String line = readLine();
+            if (line == null) {
+                return false;
+            }
+            String answer = line.trim().toLowerCase();
+            if (answer.equals("y") || answer.equals("yes")) {
+                return true;
+            }
+            if (answer.isEmpty() || answer.equals("n") || answer.equals("no")) {
+                return false;
+            }
+            out.println("   !! Please answer y or n.");
+        }
+    }
+
+    @Override
+    public void showHappyHourStatus(String status) {
+        out.println("   ** " + status + " **");
     }
 
     @Override

@@ -169,6 +169,22 @@ public class Restaurant {
         return leaving;
     }
 
+    /**
+     * Every customer still waiting for a table or food recovers satisfaction.
+     *
+     * @param points points to recover
+     * @return customers who recovered
+     */
+    public List<Customer> recoverWaitingCustomers(int points) {
+        List<Customer> recovered = new ArrayList<>();
+        for (Customer c : customers) {
+            if (c.recover(points)) {
+                recovered.add(c);
+            }
+        }
+        return recovered;
+    }
+
     // ---------------------------------------------------------------------
     // Read-only views and statistics
     // ---------------------------------------------------------------------

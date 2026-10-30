@@ -61,6 +61,21 @@ public interface GameView {
     StaffCommand askCommand(Staff staff, List<TaskOption> options);
 
     /**
+     * Asks whether to switch on Happy Hour at the start of this turn.
+     *
+     * @param turn current turn
+     * @return true to activate it now
+     */
+    boolean askActivateHappyHour(int turn);
+
+    /**
+     * Shows the Happy Hour status and remaining duration.
+     *
+     * @param status status line, e.g. "Happy Hour ACTIVE - 1 turn remaining"
+     */
+    void showHappyHourStatus(String status);
+
+    /**
      * Reports something that happened.
      *
      * @param message description

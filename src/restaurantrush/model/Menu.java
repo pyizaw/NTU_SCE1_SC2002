@@ -28,6 +28,23 @@ public class Menu {
     }
 
     /**
+     * Builds the Stage 3 menu: the standard dishes followed by every two-item
+     * combo, in the order Salad + Burger, Salad + Pasta, Burger + Pasta.
+     *
+     * @return the menu with combos
+     */
+    public static Menu withCombos() {
+        Menu menu = standard();
+        int dishCount = menu.size();
+        for (int i = 0; i < dishCount; i++) {
+            for (int j = i + 1; j < dishCount; j++) {
+                menu.add(new ComboMeal(menu.get(i), menu.get(j)));
+            }
+        }
+        return menu;
+    }
+
+    /**
      * Adds an item to the end of the menu.
      *
      * @param item item to add

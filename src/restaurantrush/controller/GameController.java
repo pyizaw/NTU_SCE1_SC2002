@@ -7,8 +7,11 @@ import restaurantrush.model.ActionResult;
 import restaurantrush.model.Menu;
 import restaurantrush.model.Restaurant;
 import restaurantrush.model.customer.Customer;
+import restaurantrush.model.pricing.HappyHour;
+import restaurantrush.model.pricing.PriceCalculator;
 import restaurantrush.staff.Cashier;
 import restaurantrush.staff.Chef;
+import restaurantrush.staff.Host;
 import restaurantrush.staff.Staff;
 import restaurantrush.staff.StaffCommand;
 import restaurantrush.staff.Waiter;
@@ -31,7 +34,10 @@ public class GameController {
     /** The menu. */
     private final Menu menu;
 
-    /** Staff the manager directs, in the order they act (the Waiter before the Chef). */
+    /** Happy Hour pricing policy (one use per game). */
+    private final HappyHour happyHour;
+
+    /** Staff the manager directs, in the order they act (Host, Waiter, then Chef). */
     private final List<Staff> directedStaff;
 
     /** The Cashier works automatically. */
@@ -53,8 +59,9 @@ public class GameController {
         this.config = config;
         this.view = view;
         this.restaurant = new Restaurant(config.getTableCount());
-        this.menu = Menu.standard();
-        this.directedStaff = List.of(new Waiter(menu), new Chef());
+        this.menu = Menu.withCombos();
+        this.happyHour = new HappyHour();
+        this.directedStaff = List.of(new Host(), new Waiter(menu, new PriceCalculator(happyHour)), new Chef());
         this.cashier = new Cashier();
     }
 
@@ -95,6 +102,7 @@ public class GameController {
                     + customer.getSatisfaction() + ").");
         }
         view.showStatus(restaurant, turn, allStaff());
+        startOfTurnHappyHour(turn);
 
         // Steps 2-3: manager choices, kitchen and serving (in staff order)
         view.showStep(TurnStep.MANAGER_CHOICES);
@@ -115,6 +123,23 @@ public class GameController {
             view.showEvent("Customer " + c.getLabel() + " ran out of patience and LEFT without paying.");
         }
         view.showTurnEnd(restaurant, turn, config.getMaxTurns());
+    }
+
+    /**
+     * Offers Happy Hour if it is unused, then applies its recovery if it is
+     * active this turn.
+     */
+    private void startOfTurnHappyHour(int turn) {
+        if (happyHour.canActivate() && view.askActivateHappyHour(turn)) {
+            happyHour.activate(turn);
+            view.showEvent("Happy Hour switched on: 20% off orders taken this turn and next.");
+        }
+        view.showHappyHourStatus(happyHour.describe(turn));
+        if (happyHour.isActive(turn)) {
+            for (Customer c : restaurant.recoverWaitingCustomers(HappyHour.RECOVERY)) {
+                view.showEvent("Happy Hour: " + c.getLabel() + " recovers to satisfaction " + c.getSatisfaction() + ".");
+            }
+        }
     }
 
     /**
